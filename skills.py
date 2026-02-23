@@ -9,7 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Arquivo de historico de operacoes
-OPERATIONS_FILE = Path(__file__).resolve().parent / "operacoes.json"
+OPERATIONS_FILE = Path(__file__).resolve().parent / "data" / "operacoes.json"
 
 
 # ============================================================
@@ -215,8 +215,10 @@ def skill_register_operation(data: dict) -> dict:
     operacoes.append(data)
 
     try:
-        with open(OPERATIONS_FILE, "w", encoding="utf-8") as f:
+        tmp = OPERATIONS_FILE.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(operacoes, f, ensure_ascii=False, indent=2)
+        tmp.replace(OPERATIONS_FILE)  # atomico: substitui so quando gravacao esta completa
         return {"success": True, "total_operacoes": len(operacoes)}
     except Exception as e:
         return {"success": False, "erro": str(e)}
@@ -349,14 +351,14 @@ def skill_generate_report() -> dict:
 # SKILLS DE PROTECAO
 # ============================================================
 
-ALERTS_FILE = Path(__file__).resolve().parent / "alertas.json"
+ALERTS_FILE = Path(__file__).resolve().parent / "data" / "alertas.json"
 SALDO_INICIAL = 1000.0  # fallback - sobrescrito por config.json
 
 
 def _get_saldo_inicial() -> float:
     """Le saldo_inicial do config.json. Fallback para SALDO_INICIAL global."""
     try:
-        config_path = Path(__file__).resolve().parent / "config.json"
+        config_path = Path(__file__).resolve().parent / "data" / "config.json"
         with open(config_path, "r", encoding="utf-8") as f:
             cfg = json.load(f)
         return float(cfg.get("saldo_inicial", SALDO_INICIAL))
@@ -454,8 +456,10 @@ def skill_log_alert(tipo: str, mensagem: str, dados: dict | None = None) -> dict
     alertas.append(alerta)
 
     try:
-        with open(ALERTS_FILE, "w", encoding="utf-8") as f:
+        tmp = ALERTS_FILE.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(alertas, f, ensure_ascii=False, indent=2)
+        tmp.replace(ALERTS_FILE)  # atomico
         return {"success": True, "total_alertas": len(alertas)}
     except Exception as e:
         return {"success": False, "erro": str(e)}

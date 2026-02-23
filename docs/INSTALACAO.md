@@ -33,10 +33,10 @@ Ou extraia o arquivo .zip fornecido para uma pasta de sua preferencia.
 Abra o **CMD** ou **PowerShell** na pasta do sistema e execute:
 
 ```
-py -3.12 -m pip install -r requirements.txt
+py -3.13 -m pip install -r requirements.txt
 ```
 
-> Se voce tem apenas uma versao de Python instalada, pode usar `python` ou `python3` no lugar de `py -3.12`.
+> Se voce tem apenas uma versao de Python instalada, pode usar `python` ou `python3` no lugar de `py -3.13`.
 
 A instalacao do PyQuotex requer conexao com a internet e Git instalado.
 
@@ -54,7 +54,7 @@ e preencha suas credenciais. Veja a secao **Obtendo as Credenciais** abaixo.
 ### Passo 4 — Executar
 
 ```
-py -3.12 main.py
+py -3.13 main.py
 ```
 
 Ou use o instalador automatico (Passo 2 e verificacoes):
@@ -112,7 +112,7 @@ TELEGRAM_PHONE=+5511999999999
 
 Na **primeira execucao** do Loop Telegram, o sistema vai pedir o codigo SMS
 enviado ao seu numero para autenticar. Apos isso, a sessao fica salva
-no arquivo `telegram_session.session` e nao pede mais.
+em `data/telegram_session.session` e nao pede mais.
 
 ---
 
@@ -121,22 +121,30 @@ no arquivo `telegram_session.session` e nao pede mais.
 ```
 AgentTradSyst/
   main.py           <- ponto de entrada, execute este arquivo
-  agents.py         <- logica dos 5 agentes
+  agents.py         <- logica dos agentes
   skills.py         <- ferramentas (tools) dos agentes
   estrategias.py    <- estrategias tecnicas do Loop Autonomo
-  simulacao.py      <- simulacao visual standalone (sem API)
-  config.json       <- parametros de risco (editavel pelo menu)
   .env              <- suas credenciais (NUNCA compartilhe)
   .env.example      <- modelo de credenciais
   requirements.txt  <- dependencias Python
   setup.bat         <- instalador automatico Windows
-  INSTALACAO.md     <- este arquivo
 
-  --- criados automaticamente na primeira execucao ---
-  operacoes.json    <- historico de operacoes
-  alertas.json      <- registro de alertas do protetor
-  relatorio.txt     <- ultimo relatorio gerado
-  sinais.json       <- sinais do Loop Lista (edite para usar)
+  data/             <- arquivos de dados (criados automaticamente)
+    config.json         <- parametros de risco (editavel pelo menu)
+    operacoes.json      <- historico de operacoes
+    alertas.json        <- registro de alertas do protetor
+    sinais.json         <- sinais do Loop Lista (edite para usar)
+    telegram_session.session  <- autenticacao Telegram (nao deletar)
+
+  logs/             <- arquivos de log (criados automaticamente)
+    sessao.log          <- log rotativo diario da sessao
+    relatorio.txt       <- ultimo relatorio gerado
+    backteste_*.txt     <- resultados de backteste salvos
+
+  docs/             <- documentacao
+    INSTALACAO.md       <- este arquivo
+    MANUAL.md           <- manual completo do sistema
+    catalogo_estrategias.md  <- descricao detalhada das estrategias
 ```
 
 ---
@@ -145,12 +153,17 @@ AgentTradSyst/
 
 | Opcao | Modo | Descricao |
 |---|---|---|
-| 1 | Simulacao | Loop local sem API, sem Quotex |
-| 2 | Quotex | Loop real via websocket |
-| 3 | Telegram | Sinais automaticos via Telegram |
-| 4 | Lista | Sinais pre-definidos em arquivo JSON |
-| 5 | Autonomo | Estrategias tecnicas automaticas |
-| 6 | Config | Editar parametros de risco |
+| 1 | Quotex | Loop real via websocket — usuario define ativo e direcao |
+| 2 | Telegram | Sinais automaticos via Telegram |
+| 3 | Lista | Sinais pre-definidos em arquivo JSON |
+| 4 | Autonomo | Estrategias tecnicas automaticas com analise de candles |
+| 5 | Config | Editar parametros de risco e operacao |
+| 6 | Saldo | Consulta saldo atual na Quotex |
+| 7 | Analise | Analise rapida: metricas e tendencia da sessao |
+| 8 | Relatorio | Relatorio completo (salvo em logs/relatorio.txt) |
+| 9 | Status | Status do AgentProtetor |
+| 10 | Desbloquear | Desbloqueia o AgentProtetor manualmente |
+| 11 | Backteste | Testa acuracia de estrategias em candles historicos |
 | r | Reiniciar | Zera sessao e contadores |
 | 0 | Sair | Encerra o sistema |
 
@@ -172,4 +185,4 @@ O sistema corrige automaticamente. Se persistir, use o Windows Terminal
 (disponivel na Microsoft Store) ou execute antes: `chcp 65001`
 
 **Loop Telegram pede codigo SMS sempre**
-Nao delete o arquivo `telegram_session.session`. Ele salva a autenticacao.
+Nao delete o arquivo `data/telegram_session.session`. Ele salva a autenticacao.

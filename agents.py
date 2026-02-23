@@ -414,7 +414,7 @@ class AgentProtetor:
     def from_config(cls) -> "AgentProtetor":
         """Cria AgentProtetor lendo parametros do config.json."""
         try:
-            config_path = Path(__file__).resolve().parent / "config.json"
+            config_path = Path(__file__).resolve().parent / "data" / "config.json"
             with open(config_path, "r", encoding="utf-8") as f:
                 cfg = json.load(f)
             return cls(
@@ -680,32 +680,38 @@ class AgentAnalisador:
         perda_total = report.get("cenarios_3_perda", 0)
 
         # Minimo de operacoes para recomendar pausa (evita falso alarme)
-        MIN_OPS_PARA_AVALIAR = 5
+        _MIN_OPS_ANALISE     = 5    # minimo de ops para dar recomendacao
+        _TAXA_PAUSA          = 40   # win rate % abaixo do qual recomenda PAUSAR
+        _TAXA_AJUSTE_MAX     = 50   # win rate % limite superior para AJUSTAR
+        _TAXA_EXCELENTE      = 60   # win rate % para considerar excelente
+        _TAXA_C3_PAUSA       = 2    # n de C3 em janela para recomendar pausa
+        _FORCA_TENDENCIA_MIN = 3    # forca minima de tendencia para bloqueio
+        _MOMENTUM_LOSS_MIN   = -20  # momentum negativo minimo para alerta
 
-        if total < MIN_OPS_PARA_AVALIAR:
+        if total < _MIN_OPS_ANALISE:
             motivos.append(f"Amostra pequena ({total} ops) - coletando dados")
             return {"acao": "CONTINUAR", "motivos": motivos}
 
         # --- Regras de PAUSAR ---
-        if taxa < 40:
+        if taxa < _TAXA_PAUSA:
             acao = "PAUSAR"
-            motivos.append(f"Taxa de acerto baixa: {taxa}% (< 40%)")
+            motivos.append(f"Taxa de acerto baixa: {taxa}% (< {_TAXA_PAUSA}%)")
 
-        if c3 >= 2:
+        if c3 >= _TAXA_C3_PAUSA:
             acao = "PAUSAR"
             motivos.append(f"{c3} Cenarios 3 nas ultimas {metricas['total']} operacoes")
 
-        if direcao == "caindo" and tendencia["forca"] >= 3:
+        if direcao == "caindo" and tendencia["forca"] >= _FORCA_TENDENCIA_MIN:
             acao = "PAUSAR"
             motivos.append(f"Tendencia fortemente de queda (forca {tendencia['forca']})")
 
-        if momentum == "negativo" and lucro < -20:
+        if momentum == "negativo" and lucro < _MOMENTUM_LOSS_MIN:
             acao = "PAUSAR"
             motivos.append(f"Momentum negativo + prejuizo de R${lucro}")
 
         # --- Regras de AJUSTAR ---
         if acao != "PAUSAR":
-            if 40 <= taxa < 50:
+            if _TAXA_PAUSA <= taxa < _TAXA_AJUSTE_MAX:
                 acao = "AJUSTAR"
                 motivos.append(f"Taxa de acerto marginal: {taxa}%")
                 ajustes.append("Reduzir valor de entrada")
@@ -730,7 +736,7 @@ class AgentAnalisador:
         if acao == "CONTINUAR":
             motivos.append(f"Taxa {taxa}%, tendencia {direcao}, momentum {momentum}")
 
-            if taxa >= 60:
+            if taxa >= _TAXA_EXCELENTE:
                 motivos.append("Performance excelente")
             if momentum == "positivo":
                 motivos.append("Bom momento para operar")
@@ -871,7 +877,7 @@ class AgentAnalisador:
         # --- Salvar em arquivo ---
         if salvar:
             from pathlib import Path as _Path
-            arquivo = _Path(__file__).resolve().parent / "relatorio.txt"
+            arquivo = _Path(__file__).resolve().parent / "logs" / "relatorio.txt"
             timestamp_header = f"Gerado em: {agora}\n{'=' * 50}\n\n"
             with open(arquivo, "w", encoding="utf-8") as f:
                 f.write(timestamp_header + texto + "\n")
@@ -924,6 +930,134 @@ class AgentAnalisador:
 
         linhas.append("=" * 40)
         return "\n".join(linhas)
+
+
+# ============================================================
+# AGENT VERIFICADOR (validacao de condicoes de mercado)
+# ============================================================
+
+class AgentVerificador:
+    """Verifica condicoes de mercado antes de executar um sinal.
+
+    NAO usa Claude API - roda localmente, sem custo.
+    Atua ANTES do AgentProtetor: descarta sinais em condicoes ruins,
+    mas NAO para o loop (apenas ignora aquele sinal especifico).
+
+    Checagens:
+    - Timing: candle nao pode estar muito proximo do fechamento
+    - Volatilidade: range dos ultimos 3 candles acima do minimo
+    - Dojis: nao operar apos dojis consecutivos (indecisao)
+    - Payout: confirma payout atual ainda acima do minimo
+
+    Pode ser desativado via config ('verificador_ativo': false).
+    """
+
+    def __init__(self, ativo: bool = True):
+        self.ativo = ativo
+
+    @classmethod
+    def from_config(cls) -> "AgentVerificador":
+        """Cria AgentVerificador lendo parametros do config.json."""
+        try:
+            config_path = Path(__file__).resolve().parent / "data" / "config.json"
+            with open(config_path, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            return cls(ativo=bool(cfg.get("verificador_ativo", True)))
+        except Exception:
+            return cls()
+
+    def verificar(
+        self,
+        candles: list[dict],
+        cfg: dict,
+        payout_atual: float | None = None,
+        tempo_restante_seg: float | None = None,
+    ) -> dict:
+        """Verifica se as condicoes de mercado permitem a entrada.
+
+        Retorna {"pode_entrar": True|False, "motivo": str, "detalhes": dict}.
+        Se desativado, retorna pode_entrar=True imediatamente.
+        """
+        if not self.ativo:
+            return {"pode_entrar": True, "motivo": "Verificador desativado", "detalhes": {}}
+
+        detalhes = {}
+
+        # --- 1. Timing: tempo restante no candle ---
+        janela = float(cfg.get("janela_execucao_seg", 5))
+        if tempo_restante_seg is not None:
+            detalhes["tempo_restante"] = round(tempo_restante_seg, 1)
+            if tempo_restante_seg < janela:
+                return {
+                    "pode_entrar": False,
+                    "motivo": (
+                        f"Timing: candle fecha em {tempo_restante_seg:.0f}s "
+                        f"(minimo: {janela:.0f}s)"
+                    ),
+                    "detalhes": detalhes,
+                }
+
+        # --- 2. Volatilidade: media dos ultimos 3 candles ---
+        vol_min = float(cfg.get("volatilidade_minima_pct", 0))
+        if vol_min > 0 and len(candles) >= 20:
+            ranges = [c["high"] - c["low"] for c in candles]
+            range_medio = sum(ranges[-20:]) / 20
+            if range_medio > 0:
+                # Exige que pelo menos 2 dos ultimos 3 candles passem no filtro
+                ultimos3 = ranges[-3:]
+                aprovados = sum(1 for r in ultimos3 if (r / range_medio * 100) >= vol_min)
+                ratio_medio3 = (sum(ultimos3) / len(ultimos3)) / range_medio * 100
+                detalhes["vol_ratio_3c"] = round(ratio_medio3, 1)
+                detalhes["vol_aprovados"] = aprovados
+                if aprovados < 2:
+                    return {
+                        "pode_entrar": False,
+                        "motivo": (
+                            f"Volatilidade: {aprovados}/3 candles acima do minimo "
+                            f"({vol_min:.0f}%) - mercado comprimido"
+                        ),
+                        "detalhes": detalhes,
+                    }
+
+        # --- 3. Dojis consecutivos (indecisao) ---
+        max_dojis = int(cfg.get("max_dojis_consecutivos", 2))
+        if max_dojis > 0 and len(candles) >= max_dojis:
+            dojis_seq = 0
+            for c in reversed(candles[-max_dojis:]):
+                if c["open"] == c["close"]:
+                    dojis_seq += 1
+                else:
+                    break
+            detalhes["dojis_consecutivos"] = dojis_seq
+            if dojis_seq >= max_dojis:
+                return {
+                    "pode_entrar": False,
+                    "motivo": (
+                        f"Indecisao: {dojis_seq} dojis consecutivos "
+                        f"(limite: {max_dojis})"
+                    ),
+                    "detalhes": detalhes,
+                }
+
+        # --- 4. Payout em tempo real ---
+        payout_min = float(cfg.get("payout_minimo_pct", 0)) / 100
+        if payout_atual is not None and payout_min > 0:
+            detalhes["payout_atual"] = round(payout_atual * 100, 1)
+            if payout_atual < payout_min:
+                return {
+                    "pode_entrar": False,
+                    "motivo": (
+                        f"Payout caiu: {payout_atual*100:.0f}% < "
+                        f"minimo {payout_min*100:.0f}%"
+                    ),
+                    "detalhes": detalhes,
+                }
+
+        return {
+            "pode_entrar": True,
+            "motivo": "Condicoes ok",
+            "detalhes": detalhes,
+        }
 
 
 # ============================================================
@@ -1126,10 +1260,10 @@ class AgentQuotex:
         win = await self.client.check_win(trade_id)
         profit = float(self.client.get_profit())
 
-        if win:
+        if win and profit > 0:
             result = "WIN"
         elif profit == 0.0:
-            result = "DOJI"   # empate: dinheiro devolvido, sem ganho nem perda
+            result = "DOJI"   # empate: capital devolvido, sem ganho nem perda
         else:
             result = "LOSS"
 
@@ -1222,25 +1356,30 @@ class AgentTelegram:
 
     SISTEMA_PARSER = """Voce e um parser especializado em sinais de trading de opcoes binarias.
 
+A mensagem pode conter propaganda, links de afiliados, banners ou texto irrelevante junto com o sinal.
+Ignore completamente o conteudo promocional (links, codigos de desconto, convites de registro, etc.)
+e foque apenas na parte que contem o sinal de trading.
+
 Extraia as seguintes informacoes do texto da mensagem:
-- ativo: par de ativos no formato interno. Converta: EUR/USD -> EURUSD, adicione _otc se for OTC/digital.
-  Exemplos: EURUSD_otc, GBPUSD_otc, EURUSD, GBPUSD, EURJPY_otc
-- direcao: "call" (compra/alta/UP/seta cima) ou "put" (venda/baixa/DOWN/seta baixo)
+- ativo: par de ativos no formato interno. Remova espacos, barras e hifens; adicione _otc se for OTC/digital/OTC.
+  Exemplos: EURUSD_otc, GBPUSD_otc, CADJPY_otc, EURUSD, GBPUSD, EURJPY_otc
+- direcao: "call" (compra/alta/UP/seta cima/🔼) ou "put" (venda/baixa/DOWN/seta baixo/🔽)
 - duracao: duracao em segundos. M1=60, M5=300, M15=900, M30=1800, H1=3600. Default 300.
-- horario: horario de entrada no formato HH:MM, se mencionado. null se nao tiver.
+- horario: horario de entrada no formato HH:MM, se mencionado. Converta HH:MM:SS para HH:MM. null se nao tiver.
 - payout: percentual de retorno numerico, se mencionado. null se nao tiver.
 
 Responda APENAS com JSON valido. Nada mais.
 
-Se nao for possivel extrair sinal de trading, retorne: {"valido": false}
+Se nao houver sinal de trading na mensagem, retorne: {"valido": false}
 
-Se for sinal de trading, retorne:
+Se houver sinal de trading, retorne:
 {"valido": true, "ativo": "EURUSD_otc", "direcao": "call", "duracao": 300, "horario": "14:30", "payout": 85}
 
 Exemplos:
 - "EURUSD CALL M5 85%" -> {"valido": true, "ativo": "EURUSD_otc", "direcao": "call", "duracao": 300, "horario": null, "payout": 85}
 - "EUR/USD - COMPRA - 5 minutos 14:30" -> {"valido": true, "ativo": "EURUSD_otc", "direcao": "call", "duracao": 300, "horario": "14:30", "payout": null}
 - "GBP/USD PUT 1 minuto" -> {"valido": true, "ativo": "GBPUSD_otc", "direcao": "put", "duracao": 60, "horario": null, "payout": null}
+- "CADJPY-OTC M5 22:55:00 call Payout: 89% REGISTER HERE codigo afiliado..." -> {"valido": true, "ativo": "CADJPY_otc", "direcao": "call", "duracao": 300, "horario": "22:55", "payout": 89}
 - "Bom dia! Resultados de ontem foram otimos" -> {"valido": false}
 """
 
@@ -1277,7 +1416,7 @@ Exemplos:
 
         self.fila = asyncio.Queue()
 
-        session_path = str(Path(__file__).resolve().parent / "telegram_session")
+        session_path = str(Path(__file__).resolve().parent / "data" / "telegram_session")
         self._client_telegram = TelegramClient(session_path, self.api_id, self.api_hash)
 
         # start() pede codigo SMS se necessario (interativo no terminal)
@@ -1298,10 +1437,84 @@ Exemplos:
             await self._client_telegram.disconnect()
             self.conectado = False
 
+    @staticmethod
+    def _parsear_sinal_regex(texto: str) -> dict | None:
+        """Parser local por regex. Retorna None se nao conseguir extrair o sinal."""
+        import re
+
+        # --- ATIVO ---
+        # Aceita: EURUSD, EUR/USD, AUDCHF-OTC, CAD-JPY, EURUSD_otc
+        ativo_pat = re.search(r'\b([A-Z]{3})[/\-_]?([A-Z]{3})\b', texto, re.IGNORECASE)
+        if not ativo_pat:
+            return None
+        ativo = ativo_pat.group(1).upper() + ativo_pat.group(2).upper()
+        if re.search(r'\bOTC\b', texto, re.IGNORECASE):
+            ativo += "_otc"
+
+        # --- DIRECAO ---
+        is_call = (
+            bool(re.search(r'\b(call|compra|alta|buy|up)\b', texto, re.IGNORECASE))
+            or '🔼' in texto
+        )
+        is_put = (
+            bool(re.search(r'\b(put|venda|baixa|sell|down)\b', texto, re.IGNORECASE))
+            or '🔽' in texto
+        )
+        if is_call and not is_put:
+            direcao = "call"
+        elif is_put and not is_call:
+            direcao = "put"
+        else:
+            return None  # ambiguo ou nao encontrado
+
+        # --- DURACAO ---
+        tf_map = {
+            "M1": 60, "M2": 120, "M3": 180, "M4": 240, "M5": 300,
+            "M10": 600, "M15": 900, "M30": 1800, "H1": 3600,
+        }
+        duracao = 300  # default M5
+        tf_pat = re.search(r'\b(M1|M2|M3|M4|M5|M10|M15|M30|H1)\b', texto, re.IGNORECASE)
+        if tf_pat:
+            duracao = tf_map.get(tf_pat.group(1).upper(), 300)
+
+        # --- HORARIO ---
+        horario = None
+        time_pat = re.search(r'\b(\d{1,2}:\d{2})(?::\d{2})?\b', texto)
+        if time_pat:
+            horario = time_pat.group(1)  # ja retorna HH:MM sem os segundos
+
+        # --- PAYOUT ---
+        payout = None
+        pay_pat = re.search(r'payout\s*[:\s]\s*(\d+\.?\d*)\s*%?', texto, re.IGNORECASE)
+        if not pay_pat:
+            pay_pat = re.search(r'\b(\d{2,3}(?:\.\d+)?)\s*%', texto)
+        if pay_pat:
+            try:
+                val = float(pay_pat.group(1))
+                if 1.0 <= val <= 100.0:
+                    payout = val
+            except ValueError:
+                pass
+
+        return {
+            "valido": True,
+            "ativo": ativo,
+            "direcao": direcao,
+            "duracao": duracao,
+            "horario": horario,
+            "payout": payout,
+        }
+
     def _parsear_sinal(self, texto: str) -> dict:
-        """Usa Claude Haiku para parsear o sinal. Retorna dict estruturado."""
+        """Parseia sinal: regex local primeiro, Claude API como fallback."""
         import json
 
+        # Tenta parser local (sem custo de tokens)
+        sinal = self._parsear_sinal_regex(texto)
+        if sinal is not None:
+            return sinal
+
+        # Fallback: Claude Haiku API
         response = self._client_ai.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=200,
@@ -1324,8 +1537,10 @@ Exemplos:
             return None
         from datetime import datetime as _dt, timedelta
         hoje = _dt.now().date()
+        # Normaliza HH:MM:SS -> HH:MM
+        horario_norm = ":".join(str(horario_str).split(":")[:2])
         try:
-            dt = _dt.strptime(f"{hoje} {horario_str}", "%Y-%m-%d %H:%M")
+            dt = _dt.strptime(f"{hoje} {horario_norm}", "%Y-%m-%d %H:%M")
             dt_ajustado = dt + timedelta(minutes=self.time_offset)
             return dt_ajustado.strftime("%H:%M")
         except ValueError:
@@ -1343,12 +1558,15 @@ Exemplos:
 
         try:
             sinal = self._parsear_sinal(texto)
-        except Exception:
+        except Exception as e:
             self.sinais_descartados += 1
+            print(f"\n  [TELEGRAM] Sinal descartado (erro parser): {e}")
+            print(f"  Texto: {texto[:80]!r}")
             return
 
         if not sinal.get("valido"):
             self.sinais_descartados += 1
+            print(f"\n  [TELEGRAM] Sinal descartado (nao reconhecido): {texto[:80]!r}")
             return
 
         # Ajusta duracao para valor valido

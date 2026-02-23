@@ -1,0 +1,100 @@
+2026-02-22 02:30:46 [INFO ] Sistema encerrado
+2026-02-22 02:30:58 [INFO ] ==================================================
+2026-02-22 02:30:58 [INFO ] Sistema iniciado
+2026-02-22 02:47:48 [INFO ] Sistema encerrado
+2026-02-22 02:47:53 [INFO ] ==================================================
+2026-02-22 02:47:53 [INFO ] Sistema iniciado
+2026-02-22 03:12:30 [INFO ] Sistema encerrado
+2026-02-22 03:12:33 [INFO ] ==================================================
+2026-02-22 03:12:33 [INFO ] Sistema iniciado
+2026-02-22 03:22:59 [INFO ] Sistema encerrado
+2026-02-22 03:23:06 [INFO ] ==================================================
+2026-02-22 03:23:06 [INFO ] Sistema iniciado
+2026-02-22 03:28:14 [INFO ] Sistema encerrado
+2026-02-22 03:28:18 [INFO ] ==================================================
+2026-02-22 03:28:18 [INFO ] Sistema iniciado
+2026-02-22 03:32:36 [WARNING] Protetor bloqueado manualmente pelo usuario
+2026-02-22 03:38:41 [INFO ] Sistema encerrado
+2026-02-22 03:38:46 [INFO ] ==================================================
+2026-02-22 03:38:46 [INFO ] Sistema iniciado
+2026-02-22 03:52:17 [INFO ] Sessao reiniciada manualmente (contadores zerados)
+2026-02-22 03:52:19 [INFO ] Sistema encerrado
+2026-02-22 03:52:24 [INFO ] ==================================================
+2026-02-22 03:52:24 [INFO ] Sistema iniciado
+2026-02-22 03:54:14 [INFO ] Sessao reiniciada manualmente (contadores zerados)
+2026-02-22 03:57:19 [INFO ] Sistema encerrado
+2026-02-22 03:57:25 [INFO ] ==================================================
+2026-02-22 03:57:25 [INFO ] Sistema iniciado
+2026-02-22 03:57:48 [INFO ] ==================================================
+2026-02-22 03:57:48 [INFO ] Sistema iniciado
+2026-02-22 04:09:48 [INFO ] Sistema encerrado
+2026-02-22 04:09:52 [INFO ] ==================================================
+2026-02-22 04:09:52 [INFO ] Sistema iniciado
+2026-02-22 04:21:26 [INFO ] Sistema encerrado
+2026-02-22 04:21:30 [INFO ] ==================================================
+2026-02-22 04:21:30 [INFO ] Sistema iniciado
+2026-02-22 04:36:03 [INFO ] Sistema encerrado
+2026-02-22 04:36:08 [INFO ] ==================================================
+2026-02-22 04:36:08 [INFO ] Sistema iniciado
+2026-02-22 04:42:03 [INFO ] Sistema encerrado
+2026-02-22 04:42:06 [INFO ] ==================================================
+2026-02-22 04:42:06 [INFO ] Sistema iniciado
+2026-02-22 04:42:53 [INFO ] Sistema encerrado
+2026-02-22 04:42:57 [INFO ] ==================================================
+2026-02-22 04:42:57 [INFO ] Sistema iniciado
+2026-02-22 05:14:48 [INFO ] ==================================================
+2026-02-22 05:14:48 [INFO ] Sistema iniciado
+2026-02-22 06:52:15 [INFO ] ==================================================
+2026-02-22 06:52:15 [INFO ] Sistema iniciado
+2026-02-22 06:53:47 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 06:59:44 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 07:00:20 [INFO ] Loop AUTONOMO iniciado | NZDCHF_otc | MACD_RSI_C | 60s | Modo: PRACTICE
+2026-02-22 07:15:00 [INFO ] Ciclo AUTONOMO | NZDCHF_otc | CALL | MACD_RSI_C | C1 | R$9.2
+2026-02-22 07:29:01 [INFO ] Ciclo AUTONOMO | NZDCHF_otc | CALL | MACD_RSI_C | C2 | R$10.0
+2026-02-22 07:31:01 [INFO ] Ciclo AUTONOMO | NZDCHF_otc | CALL | MACD_RSI_C | C1 | R$9.3
+2026-02-22 07:33:01 [INFO ] Ciclo AUTONOMO | NZDCHF_otc | PUT | MACD_RSI_C | C1 | R$9.3
+2026-02-22 07:37:11 [INFO ] Ciclo AUTONOMO | NZDCHF_otc | CALL | MACD_RSI_C | C1 | R$-10.0
+2026-02-22 07:45:32 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 07:46:23 [INFO ] Loop AUTONOMO iniciado | GBPCHF_otc | BB_SQUEEZE_A | 900s | Modo: PRACTICE
+2026-02-22 08:00:34 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 08:00:49 [INFO ] Loop AUTONOMO iniciado | AUDJPY_otc | EMA_RSI | 60s | Modo: PRACTICE
+2026-02-22 08:17:39 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 08:18:00 [INFO ] Loop AUTONOMO iniciado | CADJPY_otc | REVERSAO_SMA_M | 60s | Modo: PRACTICE
+2026-02-22 08:25:01 [INFO ] Ciclo AUTONOMO | CADJPY_otc | PUT | REVERSAO_SMA_M | C1 | R$8.6
+2026-02-22 08:25:16 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 08:25:27 [INFO ] Loop AUTONOMO iniciado | AUDJPY_otc | FRACTAL_MACD_M | 60s | Modo: PRACTICE
+2026-02-22 08:31:00 [INFO ] Ciclo AUTONOMO | AUDJPY_otc | CALL | FRACTAL_MACD_M | C2 | R$10.0
+2026-02-22 08:31:24 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 08:31:43 [INFO ] Loop AUTONOMO iniciado | AUDJPY_otc | EMA_RSI_C | 300s | Modo: PRACTICE
+2026-02-22 08:47:39 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 08:47:47 [INFO ] Loop AUTONOMO iniciado | AUDJPY_otc | TRES_CANDLES_A | 60s | Modo: PRACTICE
+2026-02-22 08:49:01 [INFO ] Ciclo AUTONOMO | AUDJPY_otc | PUT | TRES_CANDLES_A | C1 | R$9.5
+2026-02-22 09:04:01 [INFO ] Ciclo AUTONOMO | AUDJPY_otc | PUT | TRES_CANDLES_A | C2 | R$10.0
+2026-02-22 11:35:41 [INFO ] ==================================================
+2026-02-22 11:35:41 [INFO ] Sistema iniciado
+2026-02-22 11:39:52 [INFO ] Sistema encerrado
+2026-02-22 11:40:26 [INFO ] ==================================================
+2026-02-22 11:40:26 [INFO ] Sistema iniciado
+2026-02-22 11:52:51 [INFO ] Sistema encerrado
+2026-02-22 11:53:02 [INFO ] ==================================================
+2026-02-22 11:53:02 [INFO ] Sistema iniciado
+2026-02-22 11:55:11 [INFO ] Sistema encerrado
+2026-02-22 21:13:59 [INFO ] ==================================================
+2026-02-22 21:13:59 [INFO ] Sistema iniciado
+2026-02-22 21:19:47 [INFO ] Sessao reiniciada manualmente (contadores zerados)
+2026-02-22 21:19:47 [INFO ] Historico de operacoes limpo (operacoes.json)
+2026-02-22 21:20:17 [INFO ] Protetor desbloqueado manualmente
+2026-02-22 21:22:21 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 21:23:06 [INFO ] Loop AUTONOMO iniciado | CADJPY_otc | MACD_EMA_M | 300s | Modo: PRACTICE
+2026-02-22 22:50:09 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 22:50:20 [INFO ] Loop AUTONOMO iniciado | NZDJPY_otc | ENGOLFO_M | 60s | Modo: PRACTICE
+2026-02-22 23:00:23 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 23:00:47 [INFO ] Loop AUTONOMO iniciado | NZDJPY_otc | MACD_EMA_M | 300s | Modo: PRACTICE
+2026-02-22 23:05:55 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 23:08:01 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 23:08:16 [INFO ] Backteste + MG 2x EMA_RSI_C | NZD/JPY (OTC) | M5 | sinais=2 wins=2 losses=0 acerto=100.0% lucro=R$18.60 | C1=2 C2=0 C3=0
+2026-02-22 23:33:44 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 23:34:52 [INFO ] Loop AUTONOMO iniciado | NZDUSD_otc | ESTOCASTICO_A | 60s | Modo: PRACTICE
+2026-02-22 23:45:00 [INFO ] Ciclo AUTONOMO | NZDUSD_otc | PUT | ESTOCASTICO_A | C1 | R$0.0
+2026-02-22 23:50:06 [INFO ] Quotex conectado (tentativa 1/5)
+2026-02-22 23:50:29 [INFO ] Loop AUTONOMO iniciado | USDCOP_otc | ENGOLFO_M | 60s | Modo: PRACTICE

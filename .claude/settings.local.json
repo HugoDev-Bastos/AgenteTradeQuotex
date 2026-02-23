@@ -12,7 +12,15 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(py -3.13 -m pip install:*)",
       "Bash(py -3.13 -c:*)",
-      "Bash(py -3.13:*)"
+      "Bash(py -3.13:*)",
+      "WebFetch(domain:www.axi.com)",
+      "WebFetch(domain:tradenation.com)",
+      "WebFetch(domain:admiralmarkets.com)",
+      "WebFetch(domain:cmcapital.com.br)",
+      "WebFetch(domain:www.ebc.com)",
+      "WebFetch(domain:www.litefinance.org)",
+      "Bash(python3:*)",
+      "Bash(grep:*)"
     ]
   }
 }
