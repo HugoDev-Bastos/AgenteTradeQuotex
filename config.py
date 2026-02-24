@@ -122,6 +122,7 @@ def comando_config(protetor: "AgentProtetor" = None):
         ("TELEGRAM_PHONE",              "Telefone (+55...)",           "env_str"),
         ("TELEGRAM_BOT",                "Bot username (@...)",         "env_str"),
         ("TELEGRAM_TIME_OFFSET",        "Time Offset (min)",           "env_int"),
+        ("__telegram_test__",           "Testar conexao",              "telegram_test_action"),
     ]
 
     _AVANCADAS_CAMPOS = [
@@ -183,6 +184,8 @@ def comando_config(protetor: "AgentProtetor" = None):
             return "BLOQUEADO" if protetor.bloqueado else "LIVRE"
         if key == "__saldo__":
             return "[consultar]"
+        if key == "__telegram_test__":
+            return "[testar]"
         if tipo == "env_pass":
             v = env_editado.get(key, env_cfg.get(key, ""))
             return "****" if v else "NAO CONF"
@@ -275,6 +278,35 @@ def comando_config(protetor: "AgentProtetor" = None):
                 print(f"  Modo:         {saldo['modo']}")
                 print(f"  Demo:         R$ {saldo['demo_balance']}")
                 print(f"  Real:         R$ {saldo['live_balance']}\n")
+            except Exception as e:
+                print(f"\n  [ERRO] {type(e).__name__}: {e}\n")
+            return
+
+        if tipo == "telegram_test_action":
+            async def _testar_telegram():
+                from agents import AgentTelegram
+                print("\n  [TELEGRAM] Conectando... (pode pedir codigo SMS na 1a vez)")
+                try:
+                    tg = AgentTelegram()
+                    await tg.conectar()
+                    me = await tg._client_telegram.get_me()
+                    print(f"\n  +--------------------------------------------------+")
+                    print(f"  |  TELEGRAM - CONEXAO OK                           |")
+                    print(f"  +--------------------------------------------------+")
+                    nome = (me.first_name or "") + (" " + me.last_name if me.last_name else "")
+                    print(f"  Conta:    {nome.strip()}")
+                    print(f"  Username: @{me.username or 'sem username'}")
+                    print(f"  Telefone: {tg.phone}")
+                    print(f"  Bot:      {tg.bot_username}")
+                    print(f"  Offset:   {tg.time_offset} min")
+                    sessao = Path(__file__).resolve().parent / "data" / "telegram_session.session"
+                    print(f"  Sessao:   {'salva' if sessao.exists() else 'nao encontrada'}")
+                    print(f"  +--------------------------------------------------+\n")
+                    await tg.desconectar()
+                except Exception as e:
+                    print(f"\n  [ERRO] {type(e).__name__}: {e}\n")
+            try:
+                asyncio.run(_testar_telegram())
             except Exception as e:
                 print(f"\n  [ERRO] {type(e).__name__}: {e}\n")
             return
@@ -389,8 +421,12 @@ def comando_config(protetor: "AgentProtetor" = None):
         except ValueError:
             print(f"  [ERRO] Valor invalido: '{novo}'")
 
-    def _editar_subgrupo(titulo, sub_campos):
-        """Sub-menu de edicao para um grupo de campos."""
+    def _editar_subgrupo(titulo, sub_campos, extra_cmds: dict | None = None):
+        """Sub-menu de edicao para um grupo de campos.
+
+        extra_cmds: dict de {tecla: (label_rodape, funcao)} para comandos extras no rodape.
+        Ex: {"r": ("resetar sessao", fn_reset)}
+        """
         _sub = {i + 1: c for i, c in enumerate(sub_campos)}
         while True:
             print()
@@ -404,11 +440,19 @@ def comando_config(protetor: "AgentProtetor" = None):
             if env_editado:
                 print(f"  |  {'[*] .env modificado - salve no menu principal':<48}|")
                 print(SEP)
-            print("  |  Numero: editar | x: voltar                      |")
+            if extra_cmds:
+                extras_str = " | ".join(f"{k}: {v[0]}" for k, v in extra_cmds.items())
+                rodape = f"Numero: editar | {extras_str} | x: voltar"
+            else:
+                rodape = "Numero: editar | x: voltar"
+            print(f"  |  {rodape:<48}|")
             print(SEP)
             entrada = input("\n  Opcao: ").strip().lower()
             if entrada == "x":
                 break
+            if extra_cmds and entrada in extra_cmds:
+                extra_cmds[entrada][1]()
+                continue
             if entrada.isdigit():
                 idx = int(entrada)
                 if idx in _sub:
@@ -489,7 +533,28 @@ def comando_config(protetor: "AgentProtetor" = None):
 
         entry = _editaveis[idx]
         if entry[0] == "__subgroup__":
-            _editar_subgrupo(entry[1], entry[2])
+            extra = None
+            if entry[1] == "TELEGRAM":
+                def _resetar_sessao_telegram():
+                    sessao = Path(__file__).resolve().parent / "data" / "telegram_session.session"
+                    if sessao.exists():
+                        sessao.unlink()
+                        print("  [OK] Sessao Telegram resetada. Sera pedido novo codigo SMS na proxima conexao.\n")
+                        log_s("WARN", "Sessao Telegram resetada manualmente pelo usuario")
+                    else:
+                        print("  [AVISO] Nenhuma sessao Telegram encontrada.\n")
+                extra = {"r": ("resetar sessao", _resetar_sessao_telegram)}
+            elif entry[1] == "CONEXAO QUOTEX":
+                def _resetar_sessao_quotex():
+                    sessao = Path(__file__).resolve().parent / "session.json"
+                    if sessao.exists():
+                        sessao.unlink()
+                        print("  [OK] Sessao Quotex resetada. Novo login sera feito na proxima conexao.\n")
+                        log_s("WARN", "Sessao Quotex resetada manualmente pelo usuario")
+                    else:
+                        print("  [AVISO] Nenhuma sessao Quotex encontrada.\n")
+                extra = {"r": ("resetar sessao", _resetar_sessao_quotex)}
+            _editar_subgrupo(entry[1], entry[2], extra_cmds=extra)
         else:
             _editar_campo(entry[0], entry[1], entry[2])
 
